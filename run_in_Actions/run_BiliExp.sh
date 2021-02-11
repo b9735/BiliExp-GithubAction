@@ -12,7 +12,6 @@ sudo -H pip3 install --upgrade setuptools >/dev/null
 sudo -H pip3 install -r ./run_in_Actions/requirements.txt >/dev/null
 
 #将secrets映射到配置文件
-\cp -f ./run_in_Actions/config.json ./config/
 python3 ./run_in_Actions/secrets2config.py
 
 #启动BiliExp
