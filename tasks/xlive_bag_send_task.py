@@ -18,18 +18,10 @@ async def send_gift(biliapi, roomid, uid, bag, gift_num = None):
 async def xlive_bag_send_task(biliapi: asyncbili,
                               task_config: dict
                               ) -> None:
-    room_id = task_config.get("room_id", 0)
-    if room_id == 0:
-        try:
-            room_id = (await biliapi.xliveGetRecommendList())["data"]["list"][6]["roomid"]
-        except Exception as e:
-            logging.warning(f'{biliapi.name}: 获取直播间异常，原因为{str(e)}，跳过送出直播间礼物，建议手动指定直播间')
-            webhook.addMsg('msg_simple', f'{biliapi.name}:直播送出礼物失败\n')
-            return
-
     expire = task_config.get("expire", 172800)
     try:
         medal = (await biliapi.xliveFansMedal(1, 50))['data']['fansMedalList']
+        medal = [m for m in medal if m['status']] + sorted([m for m in medal if m['status'] == 0], key = lambda x: x['level'])
         bagList = sorted((await biliapi.xliveGiftBagList())["data"]["list"], key = lambda x: x['expire_at'])
 
         # lighting medals
@@ -61,7 +53,6 @@ async def xlive_bag_send_task(biliapi: asyncbili,
                     i = 0
                 send_gift(biliapi, medal[i]['roomid'], medal[i]['uid'], bag,
                           max(math.ceil((medal[i]['day_limit'] - medal[i]['today_intimacy']) / price[bag['gift_id']]['price']), 1))
-        uid = (await biliapi.xliveGetRoomInfo(room_id))["data"]["room_info"]["uid"]
     except Exception as e:
         logging.warning(f'{biliapi.name}: 直播送出即将过期礼物异常，原因为{str(e)}')
         webhook.addMsg('msg_simple', f'{biliapi.name}:直播送出礼物失败\n')
