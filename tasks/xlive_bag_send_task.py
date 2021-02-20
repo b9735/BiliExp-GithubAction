@@ -55,7 +55,7 @@ async def xlive_bag_send_task(biliapi: asyncbili,
                  30607: {'name': '小心心', 'price': 50},
                  30610: {'name': '激爽刨冰', 'price': 1}, }
         for bag in bag_to_send:
-            while not bag['gift_num'] > 0:
+            while bag['gift_num'] > 0:
                 while i < len(medal) and medal[i]['today_intimacy'] >= medal[i]['day_limit']:
                     i += 1
                 if i == len(medal):
