@@ -26,13 +26,14 @@ async def xlive_bag_send_task(biliapi: asyncbili,
 
         # lighting medals
         medals_to_send = [m for m in medal if m['is_lighted'] == 0]
+        small_hearts = [bag for bag in bagList if bag['gift_id'] == 30607 and bag['gift_num'] > 0 and bag["expire_at"] - now_time >= 0]
         i = 0
         for m in medals_to_send:
-            while i < len(bagList) and bagList[i]['gift_num'] <= 0:
+            while i < len(small_hearts) and small_hearts[i]['gift_num'] <= 0:
                 i += 1
-            if i >= len(bagList):
+            if i >= len(small_hearts):
                 return
-            i += await send_gift(biliapi, m['roomid'], m['target_id'], bagList[i], 1)
+            i += await send_gift(biliapi, m['roomid'], m['target_id'], small_hearts[i], 1)
 
         # send expire bags
         bag_to_send = [bag for bag in bagList if bag['gift_num'] > 0 and expire > bag["expire_at"] - now_time > 0]
