@@ -1,7 +1,6 @@
 from BiliClient import asyncbili
 from .push_message_task import webhook
-from .import_once import now_time
-import logging
+import logging, time
 import math
 
 
@@ -26,7 +25,8 @@ async def xlive_bag_send_task(biliapi: asyncbili,
 
         # lighting medals
         medals_to_send = [m for m in medal if m['is_lighted'] == 0]
-        small_hearts = [bag for bag in bagList if bag['gift_id'] == 30607 and bag['gift_num'] > 0 and bag["expire_at"] - now_time >= 0]
+        small_hearts = [bag for bag in bagList if
+                        bag['gift_id'] == 30607 and bag['gift_num'] > 0 and bag["expire_at"] - int(time.time()) >= 0]
         i = 0
         for m in medals_to_send:
             while i < len(small_hearts) and small_hearts[i]['gift_num'] <= 0:
@@ -36,8 +36,9 @@ async def xlive_bag_send_task(biliapi: asyncbili,
             i += await send_gift(biliapi, m['roomid'], m['target_id'], small_hearts[i], 1)
 
         # send expire bags
-        bag_to_send = [bag for bag in bagList if bag['gift_num'] > 0 and expire > bag["expire_at"] - now_time > 0]
-        small_hearts = [bag for bag in bagList if bag['gift_id'] == 30607 and bag['gift_num'] > 0 and bag["expire_at"] - now_time >= expire]
+        bag_to_send = [bag for bag in bagList if bag['gift_num'] > 0 and expire > bag["expire_at"] - int(time.time()) > 0]
+        small_hearts = [bag for bag in bagList if
+                        bag['gift_id'] == 30607 and bag['gift_num'] > 0 and bag["expire_at"] - int(time.time()) >= expire]
         heart_num_to_left = len(medal)
         for i in range(len(small_hearts) - 1, -1, -1):
             if small_hearts[i]['gift_num'] <= heart_num_to_left:
