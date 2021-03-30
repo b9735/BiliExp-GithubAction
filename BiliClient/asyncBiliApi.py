@@ -2,25 +2,26 @@
 from aiohttp import ClientSession
 from typing import Iterable, Mapping, Dict, Awaitable, Any, Optional
 import time, json
-from importlib.util import find_spec
-from . import __name__ as top_module_name
 
-if find_spec('.wasm_enc', top_module_name):  #从本模块下顶层目录寻找直播心跳解密模块，如果没找到使用在线解密服务器
-    from .wasm_enc import calc_sign
-elif find_spec('wasm_enc'):
-    from wasm_enc import calc_sign
-else:
-    enc_server = 'https://1578907340179965.cn-shanghai.fc.aliyuncs.com/2016-08-15/proxy/bili_server/heartbeat/'
+_default_headers = {
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/78.0.3904.108 Safari/537.36",
+    "Referer": "https://www.bilibili.com/",
+    'Connection': 'keep-alive'
+    }
 
 class asyncBiliApi(object):
     '''B站异步接口类'''
-    def __init__(self):
-
-        headers = {"User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/63.0.3239.108","Referer": "https://www.bilibili.com/",'Connection': 'keep-alive'}
+    def __init__(self,
+                 headers: Optional[Dict[str, str]]
+                 ):
+        if not headers:
+            headers = _default_headers
+        
         self._islogin = False
         self._show_name = None
         self._session = ClientSession(
-                headers = headers
+                headers = headers,
+                trust_env = True
                 )
     
     async def login_by_cookie(self, 
@@ -422,6 +423,12 @@ class asyncBiliApi(object):
             "csrf": self._bili_jct
             }
         async with self._session.post(url, data=post_data, verify_ssl=False) as r:
+            return await r.json()
+
+    async def vipPrivilegeList(self) -> Awaitable[Dict[str, Any]]:
+        '''获取B站大会员权益列表(B币劵，优惠券)'''
+        url = 'https://api.bilibili.com/x/vip/privilege/my'
+        async with self._session.get(url, verify_ssl=False) as r:
             return await r.json()
 
     async def getUserWallet(self, 
@@ -899,13 +906,10 @@ class asyncBiliApi(object):
             "csrf_token": self._bili_jct,
             "csrf": self._bili_jct,
             }
-        if 'calc_sign' in globals():            #有本地心跳验证模块
-            post_data["s"] = calc_sign(post_data, secret_rule) #依靠id，device，ts，ets，benchmark和secret_rule计算
-        elif enc_server:                        #没有本地验证模块则使用服务器
-            async with self._session.post(enc_server, json={"t":post_data,"r":secret_rule}, verify_ssl=False) as r:
-                post_data["s"] = await r.text()
-        else:
-            raise RuntimeError("没有心跳验证模块")
+        enc_server = 'https://1578907340179965.cn-shanghai.fc.aliyuncs.com/2016-08-15/proxy/bili_server/heartbeat/'
+        async with self._session.post(enc_server, json={"t":post_data,"r":secret_rule}, verify_ssl=False) as r:
+            post_data["s"] = await r.text()
+
         url = 'https://live-trace.bilibili.com/xlive/data-interface/v1/x25Kn/X'
         async with self._session.post(url, data=post_data, verify_ssl=False) as r:
             return await r.json()
@@ -1071,8 +1075,8 @@ class asyncBiliApi(object):
 
     async def mangaPayBCoin(self, 
                             pay_amount: int, 
-                            product_id=1, 
-                            platform='web'
+                            product_id: int = 1, 
+                            platform: str = 'web'
                             ) -> Awaitable[Dict[str, Any]]:
         '''
         B币购买漫画
@@ -1082,7 +1086,7 @@ class asyncBiliApi(object):
         '''
         url = f'https://manga.bilibili.com/twirp/pay.v1.Pay/PayBCoin?platform={platform}'
         post_data = {
-            "pay_amount": pay_amount,
+            "pay_amount": str(pay_amount),
             "product_id": product_id
             }
         async with self._session.post(url, json=post_data, verify_ssl=False) as r:
@@ -1231,6 +1235,25 @@ class asyncBiliApi(object):
         async with self._session.post(url, data=post_data, verify_ssl=False) as r:
             return await r.json()
         #{"code":0,"msg":"","data":{}}
+
+    async def mangaGetCoupons(self) -> Awaitable[Dict[str, Any]]:
+        '''获取漫画劵明细'''
+        url = 'https://manga.bilibili.com/twirp/user.v1.User/GetCoupons'
+        post_data = {
+            "not_expired": True,
+            "page_num": 1,
+            "page_size": 30,
+            "tab_type": 1
+            }
+        async with self._session.post(url, data=post_data, verify_ssl=False) as r:
+            return await r.json()
+        #{'code': 0, 'msg': '', 'data': {'total_remain_amount': 0, 'user_coupons': [], 'coupon_info': {'new_coupon_num': 0, 'coupon_will_expire': 0, 'rent_will_expire': 0, 'new_rent_num': 0, 'discount_will_expire': 0, 'new_discount_num': 0, 'month_ticket_will_expire': 0, 'new_month_ticket_num': 0, 'silver_will_expire': 0, 'new_silver_num': 0, 'remain_item': 0, 'remain_discount': 1, 'remain_coupon': 0, 'remain_silver': 31}}}
+
+    async def mangaGetStates(self) -> Awaitable[Dict[str, Any]]:
+        '''获取漫画劵状态'''
+        url = 'https://manga.bilibili.com/twirp/user.v1.User/GetStates'
+        async with self._session.post(url, verify_ssl=False) as r:
+            return await r.json()
 
     async def activityAddTimes(self, 
                                sid: str, 
