@@ -15,12 +15,13 @@ except:
 main_version = (1, 2, 1)
 main_version_str = '.'.join(map(str, main_version))
 
+
 def initlog(log_file: str, log_console: bool, msg_raw: bool = False):
     '''初始化日志参数'''
     logger_raw = logging.getLogger()
     logger_raw.setLevel(logging.INFO)
     formatter1 = logging.Formatter("[%(asctime)s] [%(levelname)s]: %(message)s")
-    formatter1.converter = lambda x: time.localtime(x + 28800 + time.timezone) #时区转换
+    formatter1.converter = lambda x: time.localtime(x + 28800 + time.timezone)  # 时区转换
     if log_file:
         try:
             file_handler = logging.FileHandler(log_file, encoding = 'utf-8')  # 输出到日志文件
@@ -59,15 +60,30 @@ def init_message(configData: dict):
 
 def load_config(path: str) -> OrderedDict:
     '''加载配置文件'''
+    config = None
     if path:
         with open(path, 'r', encoding = 'utf-8') as fp:
-            return loads(fp.read(), object_pairs_hook = OrderedDict)
+            config = loads(fp.read(), object_pairs_hook = OrderedDict)
     else:
         for path in ('./config/config.json', './config.json', '/etc/BiliExp/config.json'):
             if os.path.exists(path):
                 with open(path, 'r', encoding = 'utf-8') as fp:
-                    return loads(fp.read(), object_pairs_hook = OrderedDict)
+                    config = loads(fp.read(), object_pairs_hook = OrderedDict)
+                break
+
+    local_config = './config/config.local.json'
+    if os.path.exists(local_config):
+        with open(local_config, 'r', encoding = 'utf-8') as fp:
+            local_config = loads(fp.read(), object_pairs_hook = OrderedDict)
+        if config is None:
+            config = local_config
+        else:
+            config.update(local_config)
+
+    if config is None:
         raise RuntimeError('未找到配置文件')
+    else:
+        return config
 
 
 async def start(configData: dict):
@@ -79,11 +95,13 @@ async def start(configData: dict):
         logging.warning(f'当前程序版本为v{main_version_str},配置文件版本为v{config_version},版本不匹配可能带来额外问题')
         tasks.webhook.addMsg('msg_simple', '配置文件版本不匹配\n')
 
-    await asyncio.wait([asyncio.ensure_future(run_user_tasks(user, configData["default"], configData.get("http_header", None))) for user in configData["users"]]) #执行任务
-    await tasks.webhook.send() #推送消息
+    await asyncio.wait([asyncio.ensure_future(run_user_tasks(user, configData["default"], configData.get("http_header", None))) for user in
+                        configData["users"]])  # 执行任务
+    await tasks.webhook.send()  # 推送消息
 
-async def run_user_tasks(user: dict,           #用户配置
-                         default: dict,        #默认配置
+
+async def run_user_tasks(user: dict,  # 用户配置
+                         default: dict,  # 默认配置
                          header: dict = None
                          ) -> None:
     async with asyncbili(header) as biliapi:
