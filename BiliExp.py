@@ -124,8 +124,6 @@ async def run_user_tasks(user: dict,  # 用户配置
         task_array = []  # 存放本账户所有任务
 
         for task in default:  # 遍历任务列表，把需要运行的任务添加到task_array
-            if task != 'watch_video_task':
-                continue
 
             try:
                 task_module = import_module(f'tasks.{task}')  # 加载任务模块

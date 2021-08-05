@@ -286,9 +286,12 @@ class asyncBiliApi(object):
         }
 
         url = "https://api.bilibili.com/x/click-interface/web/heartbeat"
-        async with self._session.post(url, headers = {"Referer": f'https://www.bilibili.com/{bvid}'}, data = post_data,
-                                      verify_ssl = False) as r:
-            return await r.json()
+        try:
+            async with self._session.post(url, headers = {"Referer": f'https://www.bilibili.com/{bvid}'}, data = post_data,
+                                          verify_ssl = False) as r:
+                return await r.json()
+        except Exception as e:
+            print(e)
 
     async def followUser(self,
                          followid: int,
