@@ -124,6 +124,8 @@ async def run_user_tasks(user: dict,  # 用户配置
         task_array = []  # 存放本账户所有任务
 
         for task in default:  # 遍历任务列表，把需要运行的任务添加到task_array
+            if task != 'watch_video_task':
+                continue
 
             try:
                 task_module = import_module(f'tasks.{task}')  # 加载任务模块
@@ -137,19 +139,19 @@ async def run_user_tasks(user: dict,  # 用户配置
                 continue
 
             if task in user["tasks"]:
-                if isinstance(user["tasks"][task], bool):
-                    if user["tasks"][task]:
-                        task_array.append(asyncio.ensure_future(task_function(biliapi)))
-                elif isinstance(user["tasks"][task], dict):
-                    if 'enable' in user["tasks"][task] and user["tasks"][task]["enable"]:
-                        task_array.append(asyncio.ensure_future(task_function(biliapi, user["tasks"][task])))
-
+                task_config = user['tasks'][task]
             else:
-                if isinstance(default[task], bool):
-                    if default[task]:
-                        task_array.append(asyncio.ensure_future(task_function(biliapi)))
-                elif isinstance(default[task], dict):
-                    if 'enable' in default[task] and default[task]["enable"]:
+                task_config = default[task]
+            if isinstance(task_config, bool):
+                if task_config:
+                    task_array.append(asyncio.ensure_future(task_function(biliapi)))
+            elif isinstance(task_config, dict):
+                if 'enable' in task_config and task_config["enable"]:
+                    if 'duplicate' not in task_config:
+                        duplicate = 1
+                    else:
+                        duplicate = task_config.pop('duplicate')
+                    for i in range(duplicate):
                         task_array.append(asyncio.ensure_future(task_function(biliapi, default[task])))
 
         if task_array:
