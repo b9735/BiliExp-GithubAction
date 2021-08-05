@@ -70,6 +70,13 @@ class WatchVideoTask:
                 start_ts = time.time()
                 for i in range(video_duration // 15 + 1):
                     if time.time() - self.start_time > self.run_time:
+                        video_history_data = await self.biliapi.getVideoHistory()
+                        for video_history in video_history_data['data']['list']:
+                            if video_history['history']['cid'] == video_cid:
+                                kid = video_history['kid']
+                                await self.biliapi.deleteVideoHistory(kid)
+                                logging.info(f'删除视频 {video["bvid"]} 第 {p + 1} p 的观看历史记录')
+                                break
                         logging.info('达到最大运行时长，退出运行')
                         return
                     await self.biliapi.watchVideoHeartBeat(video['aid'], video_cid, video['bvid'], video['mid'], i * 15,
