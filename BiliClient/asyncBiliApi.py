@@ -293,6 +293,45 @@ class asyncBiliApi(object):
         except Exception as e:
             print(e)
 
+    async def getVideoHistory(self) -> Awaitable[Dict[str, Any]]:
+        '''
+        获取观看视频历史信息
+        '''
+
+        params = {
+            'max': 0,
+            'view_at': 0,
+            'business': '',
+        }
+
+        url = "https://api.bilibili.com/x/web-interface/history/cursor"
+        try:
+            async with self._session.get(url, params = params, verify_ssl = False) as r:
+                return await r.json()
+        except Exception as e:
+            print(e)
+
+    async def deleteVideoHistory(self,
+                                 kid: int = 0
+                                 ) -> Awaitable[Dict[str, Any]]:
+        '''
+        删除指定视频历史信息
+        bvid str 视频bvid
+        '''
+
+        post_data = {
+            'kid': 'archive_' + str(kid),
+            'jsonp': 'jsonp',
+            'csrf': self._bili_jct
+        }
+
+        url = "https://api.bilibili.com/x/v2/history/delete"
+        try:
+            async with self._session.post(url, data = post_data, verify_ssl = False) as r:
+                return await r.json()
+        except Exception as e:
+            print(e)
+
     async def followUser(self,
                          followid: int,
                          type: int = 1

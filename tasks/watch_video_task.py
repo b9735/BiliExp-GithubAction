@@ -80,6 +80,13 @@ class WatchVideoTask:
                         await asyncio.sleep(video_duration - i * 15)
                         await self.biliapi.watchVideoHeartBeat(video['aid'], video_cid, video['bvid'], video['mid'], video_duration,
                                                                start_ts = start_ts)
+                video_history_data = await self.biliapi.getVideoHistory()
+                for video_history in video_history_data['data']['list']:
+                    if video_history['history']['cid'] == video_cid:
+                        kid = video_history['kid']
+                        await self.biliapi.deleteVideoHistory(kid)
+                        logging.info(f'删除视频 {video["bvid"]} 第 {p + 1} p 的观看历史记录')
+                        break
 
 
 async def watch_video_task(biliapi: asyncbili, task_config: dict) -> None:
