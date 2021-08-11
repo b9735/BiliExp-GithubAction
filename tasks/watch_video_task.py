@@ -37,8 +37,9 @@ class WatchVideoTask:
 
         logging.info("检查观看视频任务")
         data = await self.biliapi.getWebNav()
-        vip_due_date = datetime.datetime.fromtimestamp(data['data']['vip']['due_date'] / 1000)
-        now_date = datetime.datetime.now(datetime.timezone(datetime.timedelta(hours = 8)))
+        tz = datetime.timezone(datetime.timedelta(hours = 8))
+        vip_due_date = datetime.datetime.fromtimestamp(data['data']['vip']['due_date'] / 1000, tz)
+        now_date = datetime.datetime.now(tz)
         if (vip_due_date - now_date).days > self.run_no_more_mouth * 30:
             logging.info(f"大会员时长多于 {self.run_no_more_mouth} 月，退出观看视频任务")
             return
