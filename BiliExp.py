@@ -145,12 +145,7 @@ async def run_user_tasks(user: dict,  # 用户配置
                     task_array.append(asyncio.ensure_future(task_function(biliapi)))
             elif isinstance(task_config, dict):
                 if 'enable' in task_config and task_config["enable"]:
-                    if 'duplicate' not in task_config:
-                        duplicate = 1
-                    else:
-                        duplicate = task_config.pop('duplicate')
-                    for i in range(duplicate):
-                        task_array.append(asyncio.ensure_future(task_function(biliapi, default[task])))
+                    task_array.append(asyncio.ensure_future(task_function(biliapi, default[task])))
 
         if task_array:
             await asyncio.wait(task_array)  # 异步等待所有任务完成

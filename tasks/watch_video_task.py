@@ -9,11 +9,12 @@ import math
 
 class WatchVideoTask:
 
-    def __init__(self, biliapi, enable, room_id, run_time):
+    def __init__(self, biliapi, enable, room_id, run_time = 5.5, duplicate = 1):
         self.biliapi = biliapi
         self.enable = enable
         self.room_id = room_id
         self.run_time = run_time * 60 * 60
+        self.duplicate = duplicate
         self.start_time = time.time()
         self.need_vlist = {}
 
@@ -38,7 +39,11 @@ class WatchVideoTask:
         if not self.room_id:
             logging.warning("观看视频模块up主号未配置,已停止...")
         else:
-            await self.watch()
+            tasks = []
+            for i in range(self.duplicate):
+                tasks.append(self.watch())
+            if tasks:
+                await asyncio.wait(map(asyncio.ensure_future, tasks))
 
     async def watch(self):
         sleep_time = random.randint(0, 15)
