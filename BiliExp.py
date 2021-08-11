@@ -86,7 +86,7 @@ def load_config(path: str) -> OrderedDict:
         return config
 
 
-async def start(configData: dict):
+async def start(configData: dict, debug_tasks: list = None):
     '''开始任务'''
     config_version = configData.get('version', '1.0.0')
     if tuple(map(int, config_version.strip().split('.'))) == main_version:
@@ -95,14 +95,16 @@ async def start(configData: dict):
         logging.warning(f'当前程序版本为v{main_version_str},配置文件版本为v{config_version},版本不匹配可能带来额外问题')
         tasks.webhook.addMsg('msg_simple', '配置文件版本不匹配\n')
 
-    await asyncio.wait([asyncio.ensure_future(run_user_tasks(user, configData["default"], configData.get("http_header", None))) for user in
-                        configData["users"]])  # 执行任务
+    await asyncio.wait(
+        [asyncio.ensure_future(run_user_tasks(user, configData["default"], configData.get("http_header", None), debug_tasks)) for user in
+         configData["users"]])  # 执行任务
     await tasks.webhook.send()  # 推送消息
 
 
 async def run_user_tasks(user: dict,  # 用户配置
                          default: dict,  # 默认配置
-                         header: dict = None
+                         header: dict = None,
+                         debug_tasks: list = None
                          ) -> None:
     async with asyncbili(header) as biliapi:
         try:
@@ -124,6 +126,8 @@ async def run_user_tasks(user: dict,  # 用户配置
         task_array = []  # 存放本账户所有任务
 
         for task in default:  # 遍历任务列表，把需要运行的任务添加到task_array
+            if debug_tasks and task not in debug_tasks:
+                continue
 
             try:
                 task_module = import_module(f'tasks.{task}')  # 加载任务模块
@@ -165,17 +169,19 @@ def main(*args, **kwargs):
 
     # 启动任务
     loop = asyncio.get_event_loop()
-    loop.run_until_complete(loop.create_task(start(configData)))
+    loop.run_until_complete(loop.create_task(start(configData, kwargs.get('debug-tasks', None))))
 
 
 if __name__ == "__main__":
     kwargs = {}
-    opts, args = getopt(sys.argv[1:], "hvc:l:", ["configfile=", "logfile="])
+    opts, args = getopt(sys.argv[1:], "hvc:l:d:", ["configfile=", "logfile=", 'debug-tasks='])
     for opt, arg in opts:
         if opt in ('-c', '--configfile'):
             kwargs["config"] = arg
         elif opt in ('-l', '--logfile'):
             kwargs["log"] = arg
+        elif opt in ('-d', '--debug-tasks'):
+            kwargs["debug-tasks"] = arg.split(',')
         elif opt == '-h':
             print('BliExp -c <configfile> -l <logfile>')
             sys.exit()

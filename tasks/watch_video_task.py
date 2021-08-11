@@ -4,16 +4,18 @@ import logging
 import asyncio
 import random
 import time
+import datetime
 import math
 
 
 class WatchVideoTask:
 
-    def __init__(self, biliapi, enable, room_id, run_time = 5.5, duplicate = 1):
+    def __init__(self, biliapi, enable, room_id, run_time = 5.5, run_no_more_mouth = 2, duplicate = 1):
         self.biliapi = biliapi
         self.enable = enable
         self.room_id = room_id
         self.run_time = run_time * 60 * 60
+        self.run_no_more_mouth = run_no_more_mouth
         self.duplicate = duplicate
         self.start_time = time.time()
         self.need_vlist = {}
@@ -34,6 +36,14 @@ class WatchVideoTask:
             return
 
         logging.info("检查观看视频任务")
+        data = await self.biliapi.getWebNav()
+        vip_due_date = datetime.datetime.fromtimestamp(data['data']['vip']['due_date'] / 1000)
+        now_date = datetime.datetime.now(datetime.timezone(datetime.timedelta(hours = 8)))
+        if (vip_due_date - now_date).days > self.run_no_more_mouth * 30:
+            logging.info(f"大会员时长多于 {self.run_no_more_mouth} 月，退出观看视频任务")
+            return
+        else:
+            logging.info(f"大会员时长仅剩 {(vip_due_date - now_date).days} 天，执行观看视频任务")
 
         # 必须有房间号才能运行
         if not self.room_id:
