@@ -2,6 +2,7 @@
 from aiohttp import ClientSession
 from typing import Iterable, Mapping, Dict, Awaitable, Any, Optional
 import time, json
+import hmac
 
 _default_headers = {
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/78.0.3904.108 Safari/537.36",
@@ -988,20 +989,26 @@ class asyncBiliApi(object):
         secret_rule      list 上次心跳加密规则 data -> secret_rule
         '''
         buvid = await self.xliveGetBuvid()
+        ts = int(time.time() * 1000)
+        t_fmt = f'{{"platform":"web","parent_id":{parent_area_id},"area_id":{area_id},"seq_id":{num},"room_id":{room_id},"buvid":"{buvid}","uuid":"{uuid}","ets":{ets},"time":{interval},"ts":{ts}}}'
+        t_fmt = t_fmt.encode('utf-8')
+        benchmark_b = benchmark.encode('utf-8')
+        secret_rules = ['MD5', 'SHA1', 'SHA256', 'SHA224', 'SHA512', 'SHA384']
+        for r in secret_rule:
+            t_fmt = hmac.new(benchmark_b, t_fmt, secret_rules[r]).hexdigest().encode('utf-8')
+
         post_data = {
             "id": f'[{parent_area_id},{area_id},{num},{room_id}]',
             "device": f'["{buvid}","{uuid}"]',
-            "ts": int(time.time() * 1000),
+            "ts": ts,
             "ets": ets,
             "benchmark": benchmark,
             "time": interval,
             "ua": 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/63.0.3239.108',
             "csrf_token": self._bili_jct,
             "csrf": self._bili_jct,
+            "s": t_fmt.decode('utf-8')
         }
-        enc_server = 'https://1578907340179965.cn-shanghai.fc.aliyuncs.com/2016-08-15/proxy/bili_server/heartbeat/'
-        async with self._session.post(enc_server, json = {"t": post_data, "r": secret_rule}, verify_ssl = False) as r:
-            post_data["s"] = await r.text()
 
         url = 'https://live-trace.bilibili.com/xlive/data-interface/v1/x25Kn/X'
         async with self._session.post(url, data = post_data, verify_ssl = False) as r:
