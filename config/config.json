@@ -108,7 +108,7 @@
             "enable": true,
             "room_id": 351899011,
             "run_time": 5.5,
-            "duplicate": 2
+            "duplicate": 1
         },       // 任务:模拟观看一个up主的随机视频(加经验值，会留下观看历史记录)，值为true或false分别代表开启和关闭
         "share_task": true,       // 任务:模拟分享一个随机视频(加经验值，并不会真的分享)，值为true或false分别代表开启和关闭
         "silver2coin_task": true, // 任务:银瓜子兑换硬币，值为true或false分别代表开启和关闭
