@@ -10,11 +10,12 @@ import math
 
 class WatchVideoTask:
 
-    def __init__(self, biliapi, enable, room_id, run_time = 5.5, run_no_more_mouth = 2, duplicate = 1):
+    def __init__(self, biliapi, enable, room_id, run_time = 5.5, delete_time = 3, run_no_more_mouth = 2, duplicate = 1):
         self.biliapi = biliapi
         self.enable = enable
         self.room_id = room_id
         self.run_time = run_time * 60 * 60
+        self.delete_time = delete_time
         self.run_no_more_mouth = run_no_more_mouth
         self.duplicate = duplicate
         self.start_time = time.time()
@@ -56,11 +57,21 @@ class WatchVideoTask:
             if tasks:
                 await asyncio.wait(map(asyncio.ensure_future, tasks))
 
+    async def delete_video_history(self, cid):
+        video_history_data = await self.biliapi.getVideoHistory()
+        for video_history in video_history_data['data']['list']:
+            if video_history['history']['cid'] == cid:
+                kid = video_history['kid']
+                await self.biliapi.deleteVideoHistory(kid)
+                logging.info(f'删除视频 {cid} 的观看历史记录')
+                break
+
     async def watch(self):
         sleep_time = random.randint(0, 15)
         logging.info(f'睡眠{sleep_time}秒，与其他任务错时启动')
         await asyncio.sleep(sleep_time)
         var = 0
+        video_history = []
         while True:
             var += 1
             if isinstance(self.room_id, list):
@@ -82,18 +93,20 @@ class WatchVideoTask:
                 logging.info("正在观看 %s 第 %d p，共 %d p" % (video["bvid"], p + 1, len(video_data["data"])))
                 video_cid = video_data["data"][p]["cid"]
                 video_duration = video_data["data"][p]["duration"]
+                if len(video_history) >= self.delete_time:
+                    num_to_delete = len(video) - self.delete_time + 1
+                    video_to_delete = video_history[:num_to_delete]
+                    video_history = video_history[num_to_delete:] + [video_cid]
+                    for cid in video_to_delete:
+                        await self.delete_video_history(cid)
+                else:
+                    video_history.append(video_cid)
 
                 start_ts = time.time()
                 for i in range(video_duration // 15 + 1):
                     if time.time() - self.start_time > self.run_time:
-                        video_history_data = await self.biliapi.getVideoHistory()
-                        for video_history in video_history_data['data']['list']:
-                            if video_history['history']['cid'] == video_cid:
-                                kid = video_history['kid']
-                                await self.biliapi.deleteVideoHistory(kid)
-                                logging.info(f'删除视频 {video["bvid"]} 第 {p + 1} p 的观看历史记录')
-                                break
-                        logging.info('达到最大运行时长，退出运行')
+                        for cid in video_history:
+                            await self.delete_video_history(cid)
                         return
                     await self.biliapi.watchVideoHeartBeat(video['aid'], video_cid, video['bvid'], video['mid'], i * 15,
                                                            start_ts = start_ts)
@@ -103,13 +116,6 @@ class WatchVideoTask:
                         await asyncio.sleep(video_duration - i * 15)
                         await self.biliapi.watchVideoHeartBeat(video['aid'], video_cid, video['bvid'], video['mid'], video_duration,
                                                                start_ts = start_ts)
-                video_history_data = await self.biliapi.getVideoHistory()
-                for video_history in video_history_data['data']['list']:
-                    if video_history['history']['cid'] == video_cid:
-                        kid = video_history['kid']
-                        await self.biliapi.deleteVideoHistory(kid)
-                        logging.info(f'删除视频 {video["bvid"]} 第 {p + 1} p 的观看历史记录')
-                        break
 
 
 async def watch_video_task(biliapi: asyncbili, task_config: dict) -> None:
