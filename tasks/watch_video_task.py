@@ -94,7 +94,7 @@ class WatchVideoTask:
                 video_cid = video_data["data"][p]["cid"]
                 video_duration = video_data["data"][p]["duration"]
                 if len(video_history) >= self.delete_time:
-                    num_to_delete = len(video) - self.delete_time + 1
+                    num_to_delete = len(video_history) - self.delete_time + 1
                     video_to_delete = video_history[:num_to_delete]
                     video_history = video_history[num_to_delete:] + [video_cid]
                     for cid in video_to_delete:
