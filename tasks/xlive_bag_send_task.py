@@ -19,7 +19,7 @@ async def xlive_bag_send_task(biliapi: asyncbili,
                               ) -> None:
     expire = task_config.get("expire", 172800)
     try:
-        medal = (await biliapi.xliveFansMedal(1, 50))['data']['fansMedalList']
+        medal = await biliapi.xliveGetAllFansMedal()
         medal = [m for m in medal if m['status']] + sorted([m for m in medal if m['status'] == 0], key = lambda x: x['level'])
         bagList = sorted((await biliapi.xliveGiftBagList())["data"]["list"], key = lambda x: x['expire_at'])
 
@@ -32,7 +32,7 @@ async def xlive_bag_send_task(biliapi: asyncbili,
             while i < len(small_hearts) and small_hearts[i]['gift_num'] <= 0:
                 i += 1
             if i >= len(small_hearts):
-                return
+                break
             i += await send_gift(biliapi, m['roomid'], m['target_id'], small_hearts[i], 1)
 
         # send expire bags
