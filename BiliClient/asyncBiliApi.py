@@ -1,4 +1,6 @@
 # -*- coding: utf-8 -*-
+import logging
+
 from aiohttp import ClientSession
 from typing import Iterable, Mapping, Dict, Awaitable, Any, Optional
 import time, json
@@ -634,6 +636,25 @@ class asyncBiliApi(object):
         url = f'https://api.live.bilibili.com/fans_medal/v5/live_fans_medal/iApiMedal?page={page}&pageSize={pageSize}'
         async with self._session.get(url, verify_ssl = False) as r:
             return await r.json()
+
+    async def xliveGetAllFansMedal(self) -> Awaitable[Dict[str, Any]]:
+        '''
+        获取所有粉丝牌
+        '''
+        page_size = 10
+        fansMedalList = []
+        data = await self.xliveFansMedal(1, page_size)
+        if data['code'] == 0:
+            fansMedalList = data['data']['fansMedalList']
+            for i in range(2, data['data']['pageinfo']['totalpages'] + 1):
+                data = await self.xliveFansMedal(i, page_size)
+                if data['code'] == 0:
+                    fansMedalList.extend(data['data']['fansMedalList'])
+                else:
+                    logging.ERROR(f'Can not get All Fans Medal: code: {data["code"]} msg: {data["msg"]} message: {data["message"]}')
+        else:
+            logging.ERROR(f'Can not get All Fans Medal: code: {data["code"]} msg: {data["msg"]} message: {data["message"]}')
+        return fansMedalList
 
     async def xliveAnchorCheck(self,
                                roomid: int
