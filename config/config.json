@@ -263,7 +263,7 @@
         "cookieDatas": {        // cookie获取方式见项目说明
             "SESSDATA": "账号SESSDATA",
             "bili_jct": "账号bili_jct",
-            "DedeUserID": "账号uid"
+            "DedeUserID": "账号uid",
          "LIVE_BUVID": "xxxxx"
         },
         "show_name": "", /* 昵称，用于日志，消息推送，填空则默认使用账号昵称，在actions上不想显示真实昵称时使用
@@ -275,7 +275,8 @@
         "cookieDatas": {
             "SESSDATA": "4a5f1c63%2C1785313721%2Cdf9fc*a1",
             "bili_jct": "cf28ba45824d443646907a5c4da8cf1",
-            "DedeUserID": "914624742"
+            "DedeUserID": "914624742",
+            "LIVE_BUVID": "xxxxx"
         },
         "show_name": "账号2",
         "tasks": {                //上面default参数中投币任务和风纪委任务都是开启的，这里在第二个账号上关闭而不影响其他任务和其他账号
