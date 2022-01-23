@@ -264,6 +264,7 @@
             "SESSDATA": "账号SESSDATA",
             "bili_jct": "账号bili_jct",
             "DedeUserID": "账号uid"
+         "LIVE_BUVID": "xxxxx"
         },
         "show_name": "", /* 昵称，用于日志，消息推送，填空则默认使用账号昵称，在actions上不想显示真实昵称时使用
         /* 下面tasks参数与最上面default参数作用相同，但优先级更高，用于定制每个账号的参数，
